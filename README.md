@@ -124,3 +124,18 @@ middleware.ts        refreshes the Supabase session on every request
   ```
   Then `/admin` unlocks (it redirects non-admins away).
 - **Product images** in the admin are URL-based — paste public image URLs (e.g. from a Supabase Storage bucket). The schema stores an image array, so wiring direct uploads later needs no data change.
+
+
+## Deploying (Vercel)
+
+Set the same environment variables from `.env.local` in your Vercel project
+(**Project → Settings → Environment Variables**). One matters for the build:
+
+- **`NEXT_PUBLIC_SITE_URL`** — set this to your real domain, e.g.
+  `https://juliusprincestore.vercel.app`. It's used for canonical URLs, Open
+  Graph tags, the sitemap and payment callbacks. The app now tolerates a blank
+  or scheme-less value (it falls back safely), but setting it correctly is what
+  makes SEO and payment redirects resolve to the right place.
+
+After adding/updating env vars in Vercel, trigger a fresh deploy so they're
+picked up.
