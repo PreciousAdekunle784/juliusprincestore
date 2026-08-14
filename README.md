@@ -150,3 +150,29 @@ them to take effect.
 The app renders every route dynamically at request time (it's a live storefront
 with auth, cart and changing inventory), so there's no build-time database
 dependency — the build succeeds as long as the variables above are present.
+
+
+## Becoming an admin
+
+There are two ways to grant admin access. Either works; the allowlist needs no SQL.
+
+**Option A — email allowlist (recommended, no SQL).** Set an `ADMIN_EMAILS`
+environment variable (in Vercel and/or `.env.local`) to a comma-separated list
+of emails, and make sure `SUPABASE_SERVICE_ROLE_KEY` is also set:
+```
+ADMIN_EMAILS=you@example.com,partner@example.com
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+Register those accounts on the site, redeploy (env changes need a fresh deploy),
+then sign in and open `/admin`.
+
+**Option B — database role.** Register on the site, then in the Supabase SQL
+editor:
+```sql
+update public.profiles set role = 'admin' where email = 'you@example.com';
+```
+It should report `UPDATE 1`. If it says `UPDATE 0`, the email doesn't match a
+registered account. Sign out and back in, then open `/admin`.
+
+A signed-in non-admin who visits `/admin` is sent to the homepage (no redirect
+loop); only signed-out visitors are sent to `/login`.

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { adminDb } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
 import type { ProductInput, CouponInput, VariantInput } from "@/types/admin";
 import type { OrderStatus, PaymentStatus } from "@/types/database";
@@ -29,7 +29,7 @@ function cleanProduct(input: ProductInput) {
 
 export async function createProduct(input: ProductInput) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   const { data, error } = await supabase.from("products").insert(cleanProduct(input)).select("id").single();
   if (error) return { error: error.message };
   revalidatePath("/admin/products");
@@ -39,7 +39,7 @@ export async function createProduct(input: ProductInput) {
 
 export async function updateProduct(id: string, input: ProductInput) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   const { error } = await supabase.from("products").update(cleanProduct(input)).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/products");
@@ -50,7 +50,7 @@ export async function updateProduct(id: string, input: ProductInput) {
 
 export async function deleteProduct(id: string) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/products");
@@ -59,7 +59,7 @@ export async function deleteProduct(id: string) {
 
 export async function toggleProductActive(id: string, active: boolean) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   await supabase.from("products").update({ active }).eq("id", id);
   revalidatePath("/admin/products");
   revalidatePath("/");
@@ -68,7 +68,7 @@ export async function toggleProductActive(id: string, active: boolean) {
 
 export async function addVariant(productId: string, v: VariantInput) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   const { error } = await supabase.from("product_variants").insert({
     product_id: productId,
     name: v.name.trim(),
@@ -83,7 +83,7 @@ export async function addVariant(productId: string, v: VariantInput) {
 
 export async function deleteVariant(id: string, productId: string) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   await supabase.from("product_variants").delete().eq("id", id);
   revalidatePath(`/admin/products/${productId}`);
   return {};
@@ -94,7 +94,7 @@ export async function updateOrder(
   patch: { payment_status?: PaymentStatus; order_status?: OrderStatus }
 ) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   const { error } = await supabase.from("orders").update(patch).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/admin/orders");
@@ -104,7 +104,7 @@ export async function updateOrder(
 
 export async function createCoupon(input: CouponInput) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   const { error } = await supabase.from("coupons").insert({
     code: input.code.trim().toUpperCase(),
     discount_type: input.discount_type,
@@ -119,7 +119,7 @@ export async function createCoupon(input: CouponInput) {
 
 export async function toggleCoupon(id: string, active: boolean) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   await supabase.from("coupons").update({ active }).eq("id", id);
   revalidatePath("/admin/coupons");
   return {};
@@ -127,7 +127,7 @@ export async function toggleCoupon(id: string, active: boolean) {
 
 export async function deleteCoupon(id: string) {
   await requireAdmin();
-  const supabase = createClient();
+  const supabase = adminDb();
   await supabase.from("coupons").delete().eq("id", id);
   revalidatePath("/admin/coupons");
   return {};
