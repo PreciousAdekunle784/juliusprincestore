@@ -24,7 +24,12 @@ export async function requireUser() {
 }
 
 export async function requireAdmin(): Promise<Profile> {
+  const user = await getSessionUser();
+  // Not signed in at all -> go authenticate, then come back to /admin.
+  if (!user) redirect("/login?next=/admin");
   const profile = await getProfile();
-  if (!profile || profile.role !== "admin") redirect("/login?next=/admin");
+  // Signed in but not an admin -> send home. Never redirect back to /login here:
+  // a logged-in user gets bounced straight back, which is an infinite loop.
+  if (!profile || profile.role !== "admin") redirect("/");
   return profile;
 }
