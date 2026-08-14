@@ -125,17 +125,28 @@ middleware.ts        refreshes the Supabase session on every request
   Then `/admin` unlocks (it redirects non-admins away).
 - **Product images** in the admin are URL-based — paste public image URLs (e.g. from a Supabase Storage bucket). The schema stores an image array, so wiring direct uploads later needs no data change.
 
-
 ## Deploying (Vercel)
 
-Set the same environment variables from `.env.local` in your Vercel project
-(**Project → Settings → Environment Variables**). One matters for the build:
+**You must add the environment variables in Vercel** — `.env.local` is only for
+local dev and is never uploaded (it's gitignored). Without them the build fails
+with `@supabase/ssr: Your project's URL and API key are required`.
 
-- **`NEXT_PUBLIC_SITE_URL`** — set this to your real domain, e.g.
-  `https://juliusprincestore.vercel.app`. It's used for canonical URLs, Open
-  Graph tags, the sitemap and payment callbacks. The app now tolerates a blank
-  or scheme-less value (it falls back safely), but setting it correctly is what
-  makes SEO and payment redirects resolve to the right place.
+In **Vercel → your project → Settings → Environment Variables**, add these for
+the **Production** (and Preview) environment, then redeploy:
 
-After adding/updating env vars in Vercel, trigger a fresh deploy so they're
-picked up.
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | your Supabase project URL (Supabase → Project Settings → API) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | your Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | your Supabase service-role key (server-only) |
+| `NEXT_PUBLIC_SITE_URL` | your real domain, e.g. `https://juliusprincestore.vercel.app` |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | store WhatsApp line, e.g. `234...` |
+| `PAYSTACK_SECRET_KEY` / `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | optional, for card checkout |
+
+`NEXT_PUBLIC_*` values are baked in at build time, so after adding or changing
+any of them you must **trigger a new deploy** (Deployments → ⋯ → Redeploy) for
+them to take effect.
+
+The app renders every route dynamically at request time (it's a live storefront
+with auth, cart and changing inventory), so there's no build-time database
+dependency — the build succeeds as long as the variables above are present.

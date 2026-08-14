@@ -44,6 +44,10 @@ export const metadata: Metadata = {
   },
 };
 
+// This is a live storefront (auth, cart, inventory), so render at request time
+// rather than baking pages at build. Prevents build-time Supabase/env coupling.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>

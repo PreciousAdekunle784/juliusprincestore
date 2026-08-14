@@ -17,14 +17,20 @@ const WishlistContext = createContext<WishlistContextValue | null>(null);
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [ids, setIds] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
-  const supabase = useRef(createClient()).current;
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  // Create the browser client lazily, client-side only. Never during SSR/build,
+  // where NEXT_PUBLIC env vars may be absent and the client would throw.
+  const getClient = useCallback(() => {
+    if (!supabaseRef.current) supabaseRef.current = createClient();
+    return supabaseRef.current;
+  }, []);
 
   const loadFromDb = useCallback(
     async (uid: string) => {
-      const { data } = await supabase.from("wishlist").select("product_id").eq("user_id", uid);
+      const { data } = await getClient().from("wishlist").select("product_id").eq("user_id", uid);
       setIds(((data as { product_id: string }[] | null) ?? []).map((r) => r.product_id));
     },
-    [supabase]
+    [getClient]
   );
 
   const loadFromLocal = useCallback(() => {
@@ -38,6 +44,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    const supabase = getClient();
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!active) return;
@@ -51,7 +58,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       else { setUserId(null); loadFromLocal(); }
     });
     return () => { active = false; sub.subscription.unsubscribe(); };
-  }, [supabase, loadFromDb, loadFromLocal]);
+  }, [getClient, loadFromDb, loadFromLocal]);
 
   useEffect(() => {
     if (!userId) {
@@ -66,13 +73,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       setIds((prev) => {
         const on = prev.includes(id);
         if (userId) {
+          const supabase = getClient();
           if (on) supabase.from("wishlist").delete().eq("user_id", userId).eq("product_id", id).then(() => {});
           else supabase.from("wishlist").insert({ user_id: userId, product_id: id }).then(() => {});
         }
         return on ? prev.filter((x) => x !== id) : [...prev, id];
       });
     },
-    [userId, supabase]
+    [userId, getClient]
   );
 
   return (
